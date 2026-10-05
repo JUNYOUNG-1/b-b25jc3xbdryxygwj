@@ -61,6 +61,10 @@ a{color:var(--accent);text-decoration:none;word-break:break-all}
 .alist .emp{display:block;color:var(--sub);font-weight:400;font-size:.9em}
 .alist .t a{font-weight:600}
 .alist .cat{font-size:11px;color:var(--sub);border:1px solid var(--line);border-radius:999px;padding:1px 6px;margin-right:3px;white-space:nowrap}
+.alist .rq{color:var(--sub);font-size:.9em;line-height:1.55;margin-top:4px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;cursor:pointer;word-break:keep-all}
+.alist .rq.open{display:block}
+.alist .rq b{color:var(--fg);font-weight:600;margin-right:4px}
+.alist td.t{min-width:320px}
 .alist .s{background:none;border:0;font-size:17px;color:var(--sub);padding:0 4px}
 .alist .s.on{color:#e0a800}
 .more{display:block;margin:18px auto}
@@ -358,11 +362,12 @@ function renderAll(){
   its.sort(s==='dl'?(a,b)=>aDl(a.dl)-aDl(b.dl):s==='sal'?(a,b)=>aSal(b.sal)-aSal(a.sal):(a,b)=>b.emp-a.emp);
   $('#acount').textContent=its.length+'건';
   const rows=its.slice(0,ALIMIT).map(x=>{const id=idOf(aCard(x));const d=aDl(x.dl);const dd=d<9e15?Math.round((d-t0)/864e5):null;
-    return `<tr data-id="${x.id}"><td class="c1">${E(x.co)}<span class="emp">${x.emp.toLocaleString()}명</span></td><td class="t">${x.cat.map(c=>`<span class="cat">${c}</span>`).join('')}<a href="https://www.saramin.co.kr/zf_user/jobs/relay/view?rec_idx=${x.id}" target="_blank" rel="noopener noreferrer">${E(x.t)}</a></td><td>${E(x.loc)}</td><td>${E(x.car)}</td><td>${E(x.typ)}</td><td>${E(x.sal)}</td><td>${dd==null?E(x.dl):dd===0?'오늘':'D-'+dd}</td><td><button class="s${ST.saved[id]?' on':''}" title="관심">${ST.saved[id]?'★':'☆'}</button></td></tr>`}).join('');
+    return `<tr data-id="${x.id}"><td class="c1">${E(x.co)}<span class="emp">${x.emp.toLocaleString()}명</span></td><td class="t">${x.cat.map(c=>`<span class="cat">${c}</span>`).join('')}<a href="https://www.saramin.co.kr/zf_user/jobs/relay/view?rec_idx=${x.id}" target="_blank" rel="noopener noreferrer">${E(x.t)}</a>${x.req?`<div class="rq"><b>자격요건</b> ${E(x.req)}</div>`:''}${x.pref?`<div class="rq"><b>우대사항</b> ${E(x.pref)}</div>`:''}</td><td>${E(x.loc)}</td><td>${E(x.car)}</td><td>${E(x.typ)}</td><td>${E(x.sal)}</td><td>${dd==null?E(x.dl):dd===0?'오늘':'D-'+dd}</td><td><button class="s${ST.saved[id]?' on':''}" title="관심">${ST.saved[id]?'★':'☆'}</button></td></tr>`}).join('');
   $('#allcontent').innerHTML=its.length?`<div class="wrap"><table class="alist"><thead><tr><th>회사</th><th>공고</th><th>근무지</th><th>경력</th><th>고용형태</th><th>급여</th><th>마감</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>`+(its.length>ALIMIT?`<button class="more" id="amore">더 보기 (${its.length-ALIMIT}건 남음)</button>`:''):'<p class="empty">조건에 맞는 공고가 없습니다.</p>';
 }
 $('#allcontent').addEventListener('click',e=>{
   if(e.target.id==='amore'){ALIMIT+=200;renderAll();return}
+  const rq=e.target.closest('.rq');if(rq){rq.classList.toggle('open');return}
   const b=e.target.closest('button.s');if(!b)return;const x=ALL.items.find(i=>i.id===b.closest('tr').dataset.id);const c=aCard(x),id=idOf(c);
   if(ST.saved[id])delete ST.saved[id];else{ST.saved[id]=1;ST.items[id]=c}save();renderAll();
 });
