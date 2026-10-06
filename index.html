@@ -96,7 +96,13 @@ a{color:var(--accent);text-decoration:none;word-break:break-all}
   <p class="note"><label><input type="checkbox" id="remember" checked style="width:auto"> 이 기기에서 기억하기</label></p>
 </div>
 <main id="app" style="display:none">
-  <div class="tabs"><button id="tabB" class="on">맞춤 브리핑</button><button id="tabA">전체 공고</button></div>
+  <div class="tabs"><button id="tabB" class="on">맞춤 브리핑</button><button id="tabC">중국 현지 공고</button><button id="tabA">전체 공고</button></div>
+  <div id="cnview" style="display:none">
+    <h1 id="cntitle">중국 현지 공고</h1>
+    <div id="cnsums"></div>
+    <div class="bar"><select id="cndate"></select><input id="cnq" type="search" placeholder="검색 (회사·직무·도시)"><span class="sp"></span><span class="note" id="cncount"></span></div>
+    <div id="cncontent"></div>
+  </div>
   <div id="allview" style="display:none">
     <h1>전체 공고</h1>
     <p class="sum">마케팅·사무·중국어 중 하나라도 해당하고 사원수 20명 이상인 공고를 가볍게 훑어보는 목록입니다. 자세한 조사는 하지 않았습니다.</p>
@@ -342,8 +348,50 @@ const aRegion=l=>/^(대전|세종|충남|충북)/.test(l)?'대전권':/^서울/.
 const aSal=s=>{const m=(s||'').match(/([\d,]+)\s*만원/);if(!m)return 0;const n=+m[1].replace(/,/g,'');return n<1000?n*12:n};
 const aDl=s=>{const m=(s||'').match(/(\d{4})-(\d\d)-(\d\d)/);return m?new Date(+m[1],+m[2]-1,+m[3]).getTime():9e15};
 const aCard=x=>({region:aRegion(x.loc)==='대전권'?'대전권':(/^(서울|경기|인천)/.test(x.loc)?'수도권':''),company:x.co,role:x.t,link:'https://www.saramin.co.kr/zf_user/jobs/relay/view?rec_idx='+x.id,rows:[['근무지',x.loc],['고용형태',x.typ],['급여',x.sal||'공고에 없음'],['사원수',x.emp.toLocaleString()+'명'],['마감',x.dl]]});
-function showTab(a){$('#tabA').classList.toggle('on',a);$('#tabB').classList.toggle('on',!a);$('#allview').style.display=a?'block':'none';$('#briefview').style.display=a?'none':'block';if(a&&!ALL&&(INDEX.all||[]).length)loadAll(INDEX.all[0].date);if(a&&!(INDEX.all||[]).length)$('#allcontent').innerHTML='<p class="empty">아직 전체 공고 목록이 없습니다.</p>'}
-$('#tabA').onclick=()=>showTab(true);$('#tabB').onclick=()=>showTab(false);
+function showTab(a){const w=a===true?'A':a===false?'B':a;['A','B','C'].forEach(k=>$('#tab'+k).classList.toggle('on',k===w));$('#allview').style.display=w==='A'?'block':'none';$('#briefview').style.display=w==='B'?'block':'none';$('#cnview').style.display=w==='C'?'block':'none';if(w==='A'&&!ALL&&(INDEX.all||[]).length)loadAll(INDEX.all[0].date);if(w==='A'&&!(INDEX.all||[]).length)$('#allcontent').innerHTML='<p class="empty">아직 전체 공고 목록이 없습니다.</p>';if(w==='C'){if(!(INDEX.china||[]).length)$('#cncontent').innerHTML='<p class="empty">아직 중국 현지 공고가 없습니다.</p>';else if(!CN)loadCn(INDEX.china[0].date)}}
+$('#tabA').onclick=()=>showTab('A');$('#tabB').onclick=()=>showTab('B');$('#tabC').onclick=()=>showTab('C');
+/* ---------- 중국 현지 공고 ---------- */
+let CN=null;
+async function loadCn(d){$('#cndate').innerHTML=INDEX.china.map(x=>`<option value="${x.date}">${x.date} (${x.n}건)</option>`).join('');$('#cndate').value=d;$('#cncontent').innerHTML='<p class="empty">불러오는 중…</p>';try{CN=await dec('c/'+d+'.enc')}catch(e){$('#cncontent').innerHTML='<p class="empty">불러오지 못했습니다.</p>';return}renderCn()}
+$('#cndate').onchange=e=>loadCn(e.target.value);$('#cnq').addEventListener('input',()=>renderCn());
+function cnCard(it){
+  const id=idOf(it);
+  let h=`<div class="card" data-id="${id}"><button class="fav${ST.saved[id]?' on':''}" data-a="fav" title="관심">${ST.saved[id]?'★':'☆'}</button><div class="top">`;
+  if(it.region)h+=`<span class="chip home">${E(it.region)}</span>`;
+  if(it.star)h+=`<span class="chip star">${E(it.star)}</span>`;
+  (it.tags||[]).forEach(t=>h+=`<span class="chip">${E(t)}</span>`);
+  h+=`</div><div class="co">${E(it.company)}</div>`;
+  if(it.role)h+=`<div class="role">${E(it.role)}</div>`;
+  if((it.rows||[]).length)h+='<dl>'+it.rows.map(r=>`<dt>${E(r[0])}</dt><dd>${E(r[1])}</dd>`).join('')+'</dl>';
+  if(it.good)h+=`<div class="pt good"><b>맞는 점</b><span>${E(it.good)}</span></div>`;
+  if(it.bad)h+=`<div class="pt bad"><b>걸리는 점</b><span>${E(it.bad)}</span></div>`;
+  h+='<div class="acts">';
+  if(it.link)h+=`<a href="${E(it.link)}" target="_blank" rel="noopener noreferrer">원문 공고 보기 →</a>`;
+  h+=`<button data-a="fb">의견</button></div>`;
+  return h+'</div>';
+}
+function renderCn(){
+  if(!CN)return;const q=$('#cnq').value.trim().toLowerCase();
+  $('#cntitle').textContent=CN.title||'중국 현지 공고';
+  $('#cnsums').innerHTML=(CN.summary||[]).map(s=>`<p class="sum">${E(s)}</p>`).join('');
+  let h='',n=0;
+  for(const sec of CN.sections||[]){
+    const its=(sec.items||[]).filter(it=>!q||((it.company||'')+' '+(it.role||'')+' '+(it.region||'')+' '+(it.rows||[]).map(r=>r[1]).join(' ')).toLowerCase().includes(q));
+    let body=its.length?`<div class="grid">${its.map(cnCard).join('')}</div>`:'';n+=its.length;
+    if(sec.bullets&&!q)body+=`<ul class="b">${sec.bullets.map(b=>`<li>${b}</li>`).join('')}</ul>`;
+    if(!body)continue;
+    h+=`<h2>${E(sec.heading)}</h2>`+(sec.note?`<p class="note">${E(sec.note)}</p>`:'')+body;
+  }
+  $('#cncount').textContent=n+'건';
+  $('#cncontent').innerHTML=h||'<p class="empty">조건에 맞는 공고가 없습니다.</p>';
+}
+$('#cncontent').addEventListener('click',e=>{
+  const b=e.target.closest('[data-a]');if(!b)return;const c=b.closest('.card');if(!c)return;const id=c.dataset.id;
+  let it=null;for(const s of (CN.sections||[]))for(const i of (s.items||[]))if(idOf(i)===id)it=i;if(!it)return;
+  if(b.dataset.a==='fav'){if(ST.saved[id])delete ST.saved[id];else{ST.saved[id]=1;ST.items[id]=it}save();renderCn()}
+  else if(b.dataset.a==='fb')openFb(it);
+});
+
 async function loadAll(d){$('#adate').innerHTML=INDEX.all.map(x=>`<option value="${x.date}">${x.date} (${x.n}건)</option>`).join('');$('#adate').value=d;$('#allcontent').innerHTML='<p class="empty">불러오는 중…</p>';try{ALL=await dec('a/'+d+'.enc')}catch(e){$('#allcontent').innerHTML='<p class="empty">불러오지 못했습니다.</p>';return}ALIMIT=200;renderAll()}
 $('#adate').onchange=e=>loadAll(e.target.value);
 ['aq','areg','asort','aSal','aNew'].forEach(i=>$('#'+i).addEventListener('input',()=>{ALIMIT=200;renderAll()}));
