@@ -55,6 +55,17 @@ a{color:var(--accent);text-decoration:none;word-break:break-all}
 .htmlsec{font-size:.95em}.htmlsec h3{font-size:1.02em}.htmlsec li{margin:4px 0}
 .tabs{display:flex;gap:8px;margin:4px 0 14px}
 .tabs button{padding:8px 16px;border-radius:999px;font-weight:600}
+.apstat{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px;margin:10px 0 14px}
+.apstat button{display:flex;flex-direction:column;align-items:center;padding:10px 6px;border-radius:12px;gap:2px}
+.apstat button b{font-size:1.5em}
+.apstat button.on{outline:2px solid var(--accent)}
+.aprow{border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin:0 0 10px;background:var(--card)}
+.aprow .h{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.aprow .co{font-weight:700;font-size:1.05em}
+.aprow .meta{color:var(--sub);font-size:.88em;margin:4px 0}
+.aprow .hist{color:var(--sub);font-size:.82em;margin:4px 0}
+.aprow textarea{width:100%;margin-top:6px;min-height:44px}
+.acts button.apb.on{background:var(--accent);color:var(--bg);border-color:var(--accent)}
 .alist{width:100%;font-size:.9em}
 .alist td{padding:10px 8px}
 .alist .c1{font-weight:650;min-width:130px}
@@ -96,7 +107,15 @@ a{color:var(--accent);text-decoration:none;word-break:break-all}
   <p class="note"><label><input type="checkbox" id="remember" checked style="width:auto"> 이 기기에서 기억하기</label></p>
 </div>
 <main id="app" style="display:none">
-  <div class="tabs"><button id="tabB" class="on">맞춤 브리핑</button><button id="tabC">중국 현지 공고</button><button id="tabA">전체 공고</button></div>
+  <div class="tabs"><button id="tabB" class="on">맞춤 브리핑</button><button id="tabD">지원함</button><button id="tabC">중국 현지 공고</button><button id="tabA">전체 공고</button></div>
+  <div id="applyview" style="display:none">
+    <h1>지원함</h1>
+    <p class="sum">지원한 공고를 모아 단계(지원함, 서류통과, 면접, 합격, 탈락)를 기록합니다. 이 기기의 브라우저에만 저장됩니다. 카드의 "지원했어요" 버튼으로 넣거나 아래 "직접 추가"를 쓰세요.</p>
+    <div class="apstat" id="apstat"></div>
+    <div class="bar"><input id="apq" type="search" placeholder="검색 (회사·직무·메모)"><select id="apsort"><option value="">최근 지원순</option><option value="dl">마감 빠른 순</option><option value="stage">단계순</option></select><span class="sp"></span><button id="apadd">직접 추가</button><button id="apcopy">목록 복사</button></div>
+    <div id="apaddbox" style="display:none" class="aprow"><div class="bar"><input id="apac" placeholder="회사"><input id="apar" placeholder="직무"><input id="apal" placeholder="공고 링크(선택)"><input id="apad" type="date"><button id="apaok">추가</button></div></div>
+    <div id="apcontent"></div>
+  </div>
   <div id="cnview" style="display:none">
     <h1 id="cntitle">중국 현지 공고</h1>
     <div id="cnsums"></div>
@@ -133,6 +152,7 @@ a{color:var(--accent);text-decoration:none;word-break:break-all}
     <label><input type="checkbox" id="fSoon"> 7일 이내 마감</label>
     <label><input type="checkbox" id="fSaved"> 관심만</label>
     <label><input type="checkbox" id="fHid"> 숨긴 것 보기</label>
+    <label><input type="checkbox" id="fApp" checked> 지원한 공고 숨기기</label>
     <span class="sp"></span>
     <select id="cols"><option value="3">3열</option><option value="2">2열</option><option value="1">1열</option></select>
     <button id="fsm">가-</button><button id="fsp">가+</button>
@@ -168,7 +188,18 @@ const b64=u=>Uint8Array.from(atob(u),c=>c.charCodeAt(0));
 let KEY=null, INDEX=null, CFG={}, CUR=null, META=null;
 const LS={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
 let ST=LS.get('jb_state',{saved:{},status:{},hidden:{},notes:{},items:{},prefs:{}});
+ST.appl=ST.appl||{};
 const save=()=>LS.set('jb_state',ST);
+const STAGES=['지원함','서류통과','면접','합격','탈락'];
+const isApplied=id=>STAGES.includes(ST.status[id]);
+const todayStr=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
+function setStatus(id,n,it){
+  if(it)ST.items[id]=it;
+  if(!n){delete ST.status[id];delete ST.appl[id];return}
+  ST.status[id]=n;
+  if(STAGES.includes(n)){const a=ST.appl[id]=ST.appl[id]||{date:todayStr(),hist:[]};if(!a.hist.length||a.hist[a.hist.length-1][0]!==n)a.hist.push([n,todayStr()])}
+  else delete ST.appl[id];
+}
 const toast=m=>{const t=$('#toast');t.textContent=m;t.style.display='block';clearTimeout(toast.h);toast.h=setTimeout(()=>t.style.display='none',2600)};
 
 async function deriveKey(pass,salt,iter){
@@ -225,7 +256,7 @@ async function loadDate(d){
 $('#date').onchange=e=>loadDate(e.target.value);
 $('#prev').onclick=()=>{const i=INDEX.dates.findIndex(x=>x.date===$('#date').value);if(i<INDEX.dates.length-1)loadDate(INDEX.dates[i+1].date)};
 $('#next').onclick=()=>{const i=INDEX.dates.findIndex(x=>x.date===$('#date').value);if(i>0)loadDate(INDEX.dates[i-1].date)};
-['q','region','star','sort','fSal','fSoon','fSaved','fHid'].forEach(i=>$('#'+i).addEventListener('input',render));
+['q','region','star','sort','fSal','fSoon','fSaved','fHid','fApp'].forEach(i=>$('#'+i).addEventListener('input',render));
 $('#cols').onchange=e=>{ST.prefs.cols=e.target.value;save();document.documentElement.style.setProperty('--cols',e.target.value)};
 $('#fsm').onclick=()=>fs(-1);$('#fsp').onclick=()=>fs(1);
 function fs(d){const c=ST.prefs.fs||16;ST.prefs.fs=Math.min(22,Math.max(13,c+d));save();document.documentElement.style.setProperty('--fs',ST.prefs.fs+'px')}
@@ -237,6 +268,7 @@ function pass(it){
   const f={q:$('#q').value.trim().toLowerCase(),reg:$('#region').value,star:$('#star').value};
   const id=idOf(it);
   if(!$('#fHid').checked&&ST.hidden[id])return false;
+  if($('#fApp').checked&&isApplied(id))return false;
   if(f.q&&!((it.company||'')+' '+(it.role||'')+' '+(it.rows||[]).map(r=>r[1]).join(' ')).toLowerCase().includes(f.q))return false;
   if(f.reg&&it.region!==f.reg)return false;
   if(f.star==='★★'&&it.star!=='★★')return false;
@@ -269,7 +301,7 @@ function card(it,ctx){
   h+='<div class="acts">';
   if(it.link)h+=`<a href="${E(it.link)}" target="_blank" rel="noopener noreferrer">공고 보기 →</a>`;
   (it.links||[]).forEach(l=>h+=`<a href="${E(l[1])}" target="_blank" rel="noopener noreferrer">${E(l[0])} →</a>`);
-  h+=`<button data-a="status">상태</button><button data-a="memo">메모</button><button data-a="hide">${ST.hidden[id]?'숨김 해제':'숨기기'}</button><button data-a="fb">의견</button></div>`;
+  h+=`<button class="apb${isApplied(id)?' on':''}" data-a="apply">${isApplied(id)?'지원함 ✓':'지원했어요'}</button><button data-a="status">상태</button><button data-a="memo">메모</button><button data-a="hide">${ST.hidden[id]?'숨김 해제':'숨기기'}</button><button data-a="fb">의견</button></div>`;
   if(ST.notes[id])h+=`<textarea class="memo" data-a="note" placeholder="메모">${E(ST.notes[id])}</textarea>`;
   return h+'</div>';
 }
@@ -295,7 +327,8 @@ $('#content').addEventListener('click',e=>{
   const a=b.dataset.a;
   if(a==='fav'){if(ST.saved[id]){delete ST.saved[id]}else{ST.saved[id]=1;ST.items[id]=it}save();render()}
   else if(a==='hide'){ST.hidden[id]?delete ST.hidden[id]:ST.hidden[id]=1;save();render()}
-  else if(a==='status'){const o=['',' 관심','지원함','서류통과','면접','합격','탈락'].map(s=>s.trim());const i=o.indexOf(ST.status[id]||'');const n=o[(i+1)%o.length];if(n){ST.status[id]=n;ST.items[id]=it}else delete ST.status[id];save();render()}
+  else if(a==='status'){const o=['','관심','지원함','서류통과','면접','합격','탈락'];const i=o.indexOf(ST.status[id]||'');const n=o[(i+1)%o.length];setStatus(id,n,it);save();render()}
+  else if(a==='apply'){if(isApplied(id)){if(confirm('지원함에서 뺄까요?'))setStatus(id,'')}else{setStatus(id,'지원함',it);toast('지원함에 넣었습니다')}save();render();renderApply()}
   else if(a==='memo'){if(ST.notes[id]==null)ST.notes[id]='';ST.items[id]=it;save();render();const t=document.querySelector(`.card[data-id="${id}"] .memo`);if(t)t.focus()}
   else if(a==='fb')openFb(it);
 });
@@ -308,7 +341,8 @@ $('#mine').onclick=()=>{const m=mineItems();$('#minelist').innerHTML=m.length?`<
 $('#closemine').onclick=()=>$('#minem').classList.remove('show');
 $('#minelist').addEventListener('click',e=>{const b=e.target.closest('[data-a]');if(!b)return;const c=b.closest('.card');const id=c.dataset.id;const a=b.dataset.a;
   if(a==='fav'){delete ST.saved[id];save();$('#mine').click();render()}
-  else if(a==='status'){const o=['','관심','지원함','서류통과','면접','합격','탈락'];const i=o.indexOf(ST.status[id]||'');const n=o[(i+1)%o.length];n?ST.status[id]=n:delete ST.status[id];save();$('#mine').click();render()}
+  else if(a==='status'){const o=['','관심','지원함','서류통과','면접','합격','탈락'];const i=o.indexOf(ST.status[id]||'');const n=o[(i+1)%o.length];setStatus(id,n);save();$('#mine').click();render()}
+  else if(a==='apply'){if(isApplied(id)){if(confirm('지원함에서 뺄까요?'))setStatus(id,'')}else setStatus(id,'지원함',ST.items[id]);save();$('#mine').click();render();renderApply()}
   else if(a==='fb')openFb(ST.items[id]);});
 $('#copymine').onclick=()=>{const t=mineItems().map(i=>`${i.company} - ${i.role||''} [${ST.status[idOf(i)]||'관심'}] 마감 ${row(i,'마감')} ${i.link||''}`).join('\n');navigator.clipboard.writeText(t).then(()=>toast('복사했습니다'))};
 
@@ -348,8 +382,8 @@ const aRegion=l=>/^(대전|세종|충남|충북)/.test(l)?'대전권':/^서울/.
 const aSal=s=>{const m=(s||'').match(/([\d,]+)\s*만원/);if(!m)return 0;const n=+m[1].replace(/,/g,'');return n<1000?n*12:n};
 const aDl=s=>{const m=(s||'').match(/(\d{4})-(\d\d)-(\d\d)/);return m?new Date(+m[1],+m[2]-1,+m[3]).getTime():9e15};
 const aCard=x=>({region:aRegion(x.loc)==='대전권'?'대전권':(/^(서울|경기|인천)/.test(x.loc)?'수도권':''),company:x.co,role:x.t,link:'https://www.saramin.co.kr/zf_user/jobs/relay/view?rec_idx='+x.id,rows:[['근무지',x.loc],['고용형태',x.typ],['급여',x.sal||'공고에 없음'],['사원수',x.emp.toLocaleString()+'명'],['마감',x.dl]]});
-function showTab(a){const w=a===true?'A':a===false?'B':a;['A','B','C'].forEach(k=>$('#tab'+k).classList.toggle('on',k===w));$('#allview').style.display=w==='A'?'block':'none';$('#briefview').style.display=w==='B'?'block':'none';$('#cnview').style.display=w==='C'?'block':'none';if(w==='A'&&!ALL&&(INDEX.all||[]).length)loadAll(INDEX.all[0].date);if(w==='A'&&!(INDEX.all||[]).length)$('#allcontent').innerHTML='<p class="empty">아직 전체 공고 목록이 없습니다.</p>';if(w==='C'){if(!(INDEX.china||[]).length)$('#cncontent').innerHTML='<p class="empty">아직 중국 현지 공고가 없습니다.</p>';else if(!CN)loadCn(INDEX.china[0].date)}}
-$('#tabA').onclick=()=>showTab('A');$('#tabB').onclick=()=>showTab('B');$('#tabC').onclick=()=>showTab('C');
+function showTab(a){const w=a===true?'A':a===false?'B':a;['A','B','C','D'].forEach(k=>$('#tab'+k).classList.toggle('on',k===w));$('#allview').style.display=w==='A'?'block':'none';$('#briefview').style.display=w==='B'?'block':'none';$('#cnview').style.display=w==='C'?'block':'none';$('#applyview').style.display=w==='D'?'block':'none';if(w==='D')renderApply();if(w==='A'&&!ALL&&(INDEX.all||[]).length)loadAll(INDEX.all[0].date);if(w==='A'&&!(INDEX.all||[]).length)$('#allcontent').innerHTML='<p class="empty">아직 전체 공고 목록이 없습니다.</p>';if(w==='C'){if(!(INDEX.china||[]).length)$('#cncontent').innerHTML='<p class="empty">아직 중국 현지 공고가 없습니다.</p>';else if(!CN)loadCn(INDEX.china[0].date)}}
+$('#tabA').onclick=()=>showTab('A');$('#tabB').onclick=()=>showTab('B');$('#tabC').onclick=()=>showTab('C');$('#tabD').onclick=()=>showTab('D');
 /* ---------- 중국 현지 공고 ---------- */
 let CN=null;
 async function loadCn(d){$('#cndate').innerHTML=INDEX.china.map(x=>`<option value="${x.date}">${x.date} (${x.n}건)</option>`).join('');$('#cndate').value=d;$('#cncontent').innerHTML='<p class="empty">불러오는 중…</p>';try{CN=await dec('c/'+d+'.enc')}catch(e){$('#cncontent').innerHTML='<p class="empty">불러오지 못했습니다.</p>';return}renderCn()}
@@ -427,6 +461,39 @@ $('#allcontent').addEventListener('click',e=>{
   if(h)history.replaceState(null,'',location.pathname);
   if(p){const ok=await unlock(p,!!h?false:true);if(!ok)LS.set('jb_pw','')}
 })();
+
+/* ---------- 지원함 ---------- */
+let APF='';
+function dlText(it){const m=((it.rows||[]).find(r=>r[0]==='마감')||[])[1]||'';const x=m.match(/(\d{4})-(\d\d)-(\d\d)/);if(!x)return {t:m||'',d:9e15};const d=new Date(+x[1],+x[2]-1,+x[3]);const n=Math.round((d-new Date(new Date().setHours(0,0,0,0)))/864e5);return {t:n<0?'마감됨':n===0?'오늘 마감':'D-'+n,d:d.getTime()}}
+function renderApply(){
+  const ids=Object.keys(ST.status).filter(isApplied);
+  const cnt={};STAGES.forEach(s=>cnt[s]=0);ids.forEach(id=>cnt[ST.status[id]]++);
+  $('#apstat').innerHTML=`<button data-s="" class="${APF===''?'on':''}"><b>${ids.length}</b>전체</button>`+STAGES.map(s=>`<button data-s="${s}" class="${APF===s?'on':''}"><b>${cnt[s]}</b>${s}</button>`).join('');
+  const q=$('#apq').value.trim().toLowerCase();
+  let list=ids.filter(id=>(!APF||ST.status[id]===APF)).map(id=>({id,it:ST.items[id]||{company:'(정보 없음)',role:''},a:ST.appl[id]||{date:'',hist:[]}}));
+  if(q)list=list.filter(x=>((x.it.company||'')+(x.it.role||'')+(ST.notes[x.id]||'')).toLowerCase().includes(q));
+  const so=$('#apsort').value;
+  if(so==='dl')list.sort((a,b)=>dlText(a.it).d-dlText(b.it).d);
+  else if(so==='stage')list.sort((a,b)=>STAGES.indexOf(ST.status[a.id])-STAGES.indexOf(ST.status[b.id]));
+  else list.sort((a,b)=>(b.a.date||'').localeCompare(a.a.date||''));
+  $('#apcontent').innerHTML=list.length?list.map(x=>{const id=x.id,it=x.it,st=ST.status[id],d=dlText(it);
+    return `<div class="aprow" data-id="${id}"><div class="h"><span class="co">${E(it.company)}</span><span class="chip st">${E(st)}</span>${d.t?`<span class="chip">마감 ${E(d.t)}</span>`:''}${it.region?`<span class="chip">${E(it.region)}</span>`:''}</div>
+    <div class="role">${E(it.role||'')}</div>
+    <div class="meta">지원일 <input type="date" data-a="adate" value="${E(x.a.date||'')}" style="width:auto"> · 단계 <select data-a="astage">${STAGES.map(s=>`<option${s===st?' selected':''}>${s}</option>`).join('')}</select></div>
+    <div class="hist">${(x.a.hist||[]).map(h=>E(h[0])+' '+E(h[1])).join(' → ')}</div>
+    <textarea data-a="anote" placeholder="메모 (면접 일정, 담당자, 결과 등)">${E(ST.notes[id]||'')}</textarea>
+    <div class="acts">${it.link?`<a href="${E(it.link)}" target="_blank" rel="noopener noreferrer">공고 보기 →</a>`:''}<button data-a="aremove">지원함에서 빼기</button></div></div>`}).join(''):'<p class="empty">아직 지원함에 넣은 공고가 없습니다. 맞춤 브리핑 카드의 "지원했어요" 버튼을 누르거나 위의 "직접 추가"를 쓰세요.</p>';
+}
+$('#apstat').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;APF=b.dataset.s;renderApply()});
+$('#apq').addEventListener('input',renderApply);$('#apsort').addEventListener('change',renderApply);
+$('#apcontent').addEventListener('change',e=>{const r=e.target.closest('.aprow');if(!r)return;const id=r.dataset.id,a=e.target.dataset.a;
+  if(a==='astage'){setStatus(id,e.target.value);save();renderApply();render()}
+  else if(a==='adate'){(ST.appl[id]=ST.appl[id]||{date:'',hist:[]}).date=e.target.value;save()}});
+$('#apcontent').addEventListener('input',e=>{if(e.target.dataset.a==='anote'){ST.notes[e.target.closest('.aprow').dataset.id]=e.target.value;save()}});
+$('#apcontent').addEventListener('click',e=>{const b=e.target.closest('[data-a="aremove"]');if(!b)return;const id=b.closest('.aprow').dataset.id;if(confirm('지원함에서 뺄까요?')){setStatus(id,'');save();renderApply();render()}});
+$('#apadd').onclick=()=>{const x=$('#apaddbox');x.style.display=x.style.display==='none'?'block':'none';$('#apad').value=todayStr()};
+$('#apaok').onclick=()=>{const c=$('#apac').value.trim();if(!c){toast('회사를 입력하세요');return}const it={company:c,role:$('#apar').value.trim(),link:$('#apal').value.trim(),rows:[],tags:['직접 추가']};const id=idOf(it);setStatus(id,'지원함',it);ST.appl[id].date=$('#apad').value||todayStr();ST.appl[id].hist=[['지원함',ST.appl[id].date]];save();['#apac','#apar','#apal'].forEach(k=>$(k).value='');$('#apaddbox').style.display='none';renderApply();render()};
+$('#apcopy').onclick=()=>{const t=Object.keys(ST.status).filter(isApplied).map(id=>{const it=ST.items[id]||{};return `${it.company} - ${it.role||''} [${ST.status[id]}] 지원일 ${(ST.appl[id]||{}).date||''} ${it.link||''}`}).join('\n');navigator.clipboard.writeText(t).then(()=>toast('복사했습니다'))};
 </script>
 </body>
 </html>
