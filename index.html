@@ -66,6 +66,39 @@ a{color:var(--accent);text-decoration:none;word-break:break-all}
 .aprow .hist{color:var(--sub);font-size:.82em;margin:4px 0}
 .aprow textarea{width:100%;margin-top:6px;min-height:44px}
 .acts button.apb.on{background:var(--accent);color:var(--bg);border-color:var(--accent)}
+.chip.t-hi{background:#2f9e44;border-color:#2f9e44;color:#fff}
+.chip.t-lo{background:#e5484d;border-color:#e5484d;color:#fff}
+.tabs{flex-wrap:wrap}
+.taste{border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin:10px 0;background:var(--card);font-size:.92em}
+.taste summary{cursor:pointer;font-weight:700}
+.taste .tw{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0}
+.taste .tw span{padding:3px 9px;border-radius:999px;color:#fff;font-size:.88em}
+.taste .up{background:#2f9e44}.taste .dn{background:#e5484d}
+.calhead{display:flex;align-items:center;gap:10px;margin:10px 0}
+.calhead button{white-space:nowrap}
+.calhead b{font-size:1.25em;min-width:130px;text-align:center}
+.calf{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0;align-items:center;font-size:.88em}
+.calf .lb{color:var(--sub);min-width:44px}
+.calf button{border-radius:999px;padding:4px 11px;opacity:.38}
+.calf button.on{opacity:1;background:var(--c,var(--fg));border-color:var(--c,var(--fg));color:#fff}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);border-top:1px solid var(--line);border-left:1px solid var(--line);margin:8px 0 18px}
+.cal .dow{font-size:.8em;color:var(--sub);text-align:center;padding:5px 0;border-right:1px solid var(--line);border-bottom:1px solid var(--line);font-weight:600}
+.cal .day{min-height:92px;padding:4px;border-right:1px solid var(--line);border-bottom:1px solid var(--line);cursor:pointer;overflow:hidden}
+.cal .day.out{background:var(--card);opacity:.45}
+.cal .day.today{outline:2px solid var(--accent);outline-offset:-2px}
+.cal .day.sel{background:var(--card)}
+.cal .dn{font-size:.8em;font-weight:700;color:var(--sub)}
+.cal .sun .dn{color:#e5484d}.cal .sat .dn{color:#0b7fd4}
+.cal .ev{display:block;font-size:.74em;line-height:1.25;color:#fff;border-radius:5px;padding:2px 5px;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cal .more{font-size:.72em;color:var(--sub);margin-top:2px}
+@media(max-width:600px){.cal .day{min-height:64px;padding:2px}.cal .ev{font-size:.62em;padding:1px 3px}}
+.agd{margin:0 0 6px;font-weight:700;font-size:.95em;padding-top:10px}
+.agi{display:flex;gap:10px;align-items:flex-start;border:1px solid var(--line);border-left:6px solid var(--c);border-radius:10px;padding:9px 12px;margin:0 0 8px;background:var(--card)}
+.agi .ty{color:#fff;background:var(--c);border-radius:999px;padding:2px 9px;font-size:.78em;white-space:nowrap;font-weight:600}
+.agi .tx{flex:1;min-width:0}
+.agi .tx b{display:block}
+.agi .tx span{color:var(--sub);font-size:.88em}
+.agi button{padding:2px 8px;font-size:.8em}
 .alist{width:100%;font-size:.9em}
 .alist td{padding:10px 8px}
 .alist .c1{font-weight:650;min-width:130px}
@@ -107,7 +140,26 @@ a{color:var(--accent);text-decoration:none;word-break:break-all}
   <p class="note"><label><input type="checkbox" id="remember" checked style="width:auto"> 이 기기에서 기억하기</label></p>
 </div>
 <main id="app" style="display:none">
-  <div class="tabs"><button id="tabB" class="on">맞춤 브리핑</button><button id="tabD">지원함</button><button id="tabC">중국 현지 공고</button><button id="tabA">전체 공고</button></div>
+  <div class="tabs"><button id="tabB" class="on">맞춤 브리핑</button><button id="tabF">즐겨찾기</button><button id="tabD">지원함</button><button id="tabK">캘린더</button><button id="tabC">중국 현지 공고</button><button id="tabA">전체 공고</button></div>
+  <div id="favview" style="display:none">
+    <h1>즐겨찾기</h1>
+    <p class="sum">별표(☆)를 누른 공고만 모았습니다. 별표·지원·숨기기 기록으로 취향을 계산해 다른 공고에 "취향 n%"를 표시합니다.</p>
+    <div class="bar"><input id="fvq" type="search" placeholder="검색 (회사·직무)"><select id="fvsort"><option value="">마감 빠른 순</option><option value="taste">취향 점수순</option><option value="new">최근 담은 순</option></select><label><input type="checkbox" id="fvpast"> 마감된 것도 보기</label><span class="sp"></span><span class="note" id="fvcount"></span></div>
+    <details class="taste" id="tastebox"><summary>내 취향 분석</summary><div id="tastebody"></div></details>
+    <div id="favcontent"></div>
+  </div>
+  <div id="calview" style="display:none">
+    <h1>캘린더</h1>
+    <p class="sum">즐겨찾기하거나 지원한 공고의 마감·전형 일정이 자동으로 들어옵니다. 아래 버튼을 눌러 보고 싶은 것만 켜고 끌 수 있고, 일정을 직접 추가할 수도 있습니다.</p>
+    <div class="calf" id="calft"></div>
+    <div class="calf" id="calfs"></div>
+    <div class="calf" id="calfc"></div>
+    <div class="calhead"><button id="calprev">‹</button><b id="calym"></b><button id="calnext">›</button><button id="caltoday">오늘</button><span class="sp"></span><button id="caladd" class="on">일정 추가</button></div>
+    <div id="caladdbox" style="display:none" class="aprow"><div class="bar" style="position:static;border:0"><select id="calco"></select><input id="calcot" placeholder="회사 직접 입력" style="display:none"><select id="caltype"></select><input id="caldate" type="date"><input id="calsub" placeholder="내용 (예: 1차 면접 14시 본사)"><button id="calok">추가</button></div></div>
+    <div class="cal" id="calgrid"></div>
+    <h2 id="agtitle">다가오는 일정</h2>
+    <div id="agenda"></div>
+  </div>
   <div id="applyview" style="display:none">
     <h1>지원함</h1>
     <p class="sum">지원한 공고를 모아 단계(지원함, 서류통과, 면접, 합격, 탈락)를 기록합니다. 이 기기의 브라우저에만 저장됩니다. 카드의 "지원했어요" 버튼으로 넣거나 아래 "직접 추가"를 쓰세요.</p>
@@ -147,7 +199,7 @@ a{color:var(--accent);text-decoration:none;word-break:break-all}
     <input id="q" type="search" placeholder="검색 (회사·직무)">
     <select id="region"><option value="">지역 전체</option><option>대전권</option><option>수도권</option></select>
     <select id="star"><option value="">등급 전체</option><option value="★★">★★만</option><option value="★">★ 이상</option></select>
-    <select id="sort"><option value="">기본순</option><option value="dl">마감 빠른 순</option><option value="sal">급여 높은 순</option><option value="emp">사원수 많은 순</option></select>
+    <select id="sort"><option value="">기본순</option><option value="dl">마감 빠른 순</option><option value="sal">급여 높은 순</option><option value="emp">사원수 많은 순</option><option value="taste">취향 점수순</option></select>
     <label><input type="checkbox" id="fSal"> 급여 공개만</label>
     <label><input type="checkbox" id="fSoon"> 7일 이내 마감</label>
     <label><input type="checkbox" id="fSaved"> 관심만</label>
@@ -189,7 +241,8 @@ let KEY=null, INDEX=null, CFG={}, CUR=null, META=null;
 const LS={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
 let ST=LS.get('jb_state',{saved:{},status:{},hidden:{},notes:{},items:{},prefs:{}});
 ST.appl=ST.appl||{};
-const save=()=>LS.set('jb_state',ST);
+ST.cal=ST.cal||[];ST.savedAt=ST.savedAt||{};let TM=null;
+const save=()=>{TM=null;LS.set('jb_state',ST)};
 const STAGES=['지원함','서류통과','면접','합격','탈락'];
 const isApplied=id=>STAGES.includes(ST.status[id]);
 const todayStr=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
@@ -280,7 +333,7 @@ function pass(it){
 }
 function sorter(items){
   const s=$('#sort').value;if(!s)return items;
-  const k={dl:it=>{const d=dlOf(it);return d?d.getTime():9e15},sal:it=>-salOf(it),emp:it=>-empOf(it)}[s];
+  const k={dl:it=>{const d=dlOf(it);return d?d.getTime():9e15},sal:it=>-salOf(it),emp:it=>-empOf(it),taste:it=>-(taste(it)??50)}[s];
   return items.slice().sort((a,b)=>k(a)-k(b));
 }
 function card(it,ctx){
@@ -291,6 +344,7 @@ function card(it,ctx){
   if(it.region)h+=`<span class="chip${it.region==='대전권'?' home':''}">${E(it.region)}</span>`;
   if(it.star)h+=`<span class="chip star">${E(it.star)}</span>`;
   (it.tags||[]).forEach(t=>h+=`<span class="chip">${E(t)}</span>`);
+  {const ts=taste(it);if(ts!=null&&!ST.saved[id]&&!isApplied(id))h+=`<span class="chip${ts>=65?' t-hi':ts<=35?' t-lo':''}" title="별표·지원·숨기기 기록으로 계산한 예상 취향">취향 ${ts}%</span>`}
   if(d){const n=dday(d);h+=`<span class="chip">${n<0?'마감됨':n===0?'오늘 마감':'D-'+n}</span>`}
   if(st)h+=`<span class="chip st">${E(st)}</span>`;
   h+=`</div><div class="co">${E(it.company)}</div>`;
@@ -325,8 +379,8 @@ $('#content').addEventListener('click',e=>{
   const b=e.target.closest('[data-a]');if(!b)return;
   const c=b.closest('.card');if(!c)return;const id=c.dataset.id;const it=findItem(id);
   const a=b.dataset.a;
-  if(a==='fav'){if(ST.saved[id]){delete ST.saved[id]}else{ST.saved[id]=1;ST.items[id]=it}save();render()}
-  else if(a==='hide'){ST.hidden[id]?delete ST.hidden[id]:ST.hidden[id]=1;save();render()}
+  if(a==='fav'){if(ST.saved[id]){delete ST.saved[id]}else{ST.saved[id]=1;ST.savedAt[id]=Date.now();ST.items[id]=it}save();render()}
+  else if(a==='hide'){if(ST.hidden[id])delete ST.hidden[id];else{ST.hidden[id]=1;ST.items[id]=it}save();render()}
   else if(a==='status'){const o=['','관심','지원함','서류통과','면접','합격','탈락'];const i=o.indexOf(ST.status[id]||'');const n=o[(i+1)%o.length];setStatus(id,n,it);save();render()}
   else if(a==='apply'){if(isApplied(id)){if(confirm('지원함에서 뺄까요?'))setStatus(id,'')}else{setStatus(id,'지원함',it);toast('지원함에 넣었습니다')}save();render();renderApply()}
   else if(a==='memo'){if(ST.notes[id]==null)ST.notes[id]='';ST.items[id]=it;save();render();const t=document.querySelector(`.card[data-id="${id}"] .memo`);if(t)t.focus()}
@@ -382,8 +436,8 @@ const aRegion=l=>/^(대전|세종|충남|충북)/.test(l)?'대전권':/^서울/.
 const aSal=s=>{const m=(s||'').match(/([\d,]+)\s*만원/);if(!m)return 0;const n=+m[1].replace(/,/g,'');return n<1000?n*12:n};
 const aDl=s=>{const m=(s||'').match(/(\d{4})-(\d\d)-(\d\d)/);return m?new Date(+m[1],+m[2]-1,+m[3]).getTime():9e15};
 const aCard=x=>({region:aRegion(x.loc)==='대전권'?'대전권':(/^(서울|경기|인천)/.test(x.loc)?'수도권':''),company:x.co,role:x.t,link:'https://www.saramin.co.kr/zf_user/jobs/relay/view?rec_idx='+x.id,rows:[['근무지',x.loc],['고용형태',x.typ],['급여',x.sal||'공고에 없음'],['사원수',x.emp.toLocaleString()+'명'],['마감',x.dl]]});
-function showTab(a){const w=a===true?'A':a===false?'B':a;['A','B','C','D'].forEach(k=>$('#tab'+k).classList.toggle('on',k===w));$('#allview').style.display=w==='A'?'block':'none';$('#briefview').style.display=w==='B'?'block':'none';$('#cnview').style.display=w==='C'?'block':'none';$('#applyview').style.display=w==='D'?'block':'none';if(w==='D')renderApply();if(w==='A'&&!ALL&&(INDEX.all||[]).length)loadAll(INDEX.all[0].date);if(w==='A'&&!(INDEX.all||[]).length)$('#allcontent').innerHTML='<p class="empty">아직 전체 공고 목록이 없습니다.</p>';if(w==='C'){if(!(INDEX.china||[]).length)$('#cncontent').innerHTML='<p class="empty">아직 중국 현지 공고가 없습니다.</p>';else if(!CN)loadCn(INDEX.china[0].date)}}
-$('#tabA').onclick=()=>showTab('A');$('#tabB').onclick=()=>showTab('B');$('#tabC').onclick=()=>showTab('C');$('#tabD').onclick=()=>showTab('D');
+function showTab(a){const w=a===true?'A':a===false?'B':a;['A','B','C','D','F','K'].forEach(k=>$('#tab'+k).classList.toggle('on',k===w));$('#allview').style.display=w==='A'?'block':'none';$('#briefview').style.display=w==='B'?'block':'none';$('#cnview').style.display=w==='C'?'block':'none';$('#applyview').style.display=w==='D'?'block':'none';if(w==='D')renderApply();$('#favview').style.display=w==='F'?'block':'none';$('#calview').style.display=w==='K'?'block':'none';if(w==='F')renderFav();if(w==='K')renderCal();if(w==='A'&&!ALL&&(INDEX.all||[]).length)loadAll(INDEX.all[0].date);if(w==='A'&&!(INDEX.all||[]).length)$('#allcontent').innerHTML='<p class="empty">아직 전체 공고 목록이 없습니다.</p>';if(w==='C'){if(!(INDEX.china||[]).length)$('#cncontent').innerHTML='<p class="empty">아직 중국 현지 공고가 없습니다.</p>';else if(!CN)loadCn(INDEX.china[0].date)}}
+$('#tabA').onclick=()=>showTab('A');$('#tabB').onclick=()=>showTab('B');$('#tabC').onclick=()=>showTab('C');$('#tabD').onclick=()=>showTab('D');$('#tabF').onclick=()=>showTab('F');$('#tabK').onclick=()=>showTab('K');
 /* ---------- 중국 현지 공고 ---------- */
 let CN=null;
 async function loadCn(d){$('#cndate').innerHTML=INDEX.china.map(x=>`<option value="${x.date}">${x.date} (${x.n}건)</option>`).join('');$('#cndate').value=d;$('#cncontent').innerHTML='<p class="empty">불러오는 중…</p>';try{CN=await dec('c/'+d+'.enc')}catch(e){$('#cncontent').innerHTML='<p class="empty">불러오지 못했습니다.</p>';return}renderCn()}
@@ -494,6 +548,134 @@ $('#apcontent').addEventListener('click',e=>{const b=e.target.closest('[data-a="
 $('#apadd').onclick=()=>{const x=$('#apaddbox');x.style.display=x.style.display==='none'?'block':'none';$('#apad').value=todayStr()};
 $('#apaok').onclick=()=>{const c=$('#apac').value.trim();if(!c){toast('회사를 입력하세요');return}const it={company:c,role:$('#apar').value.trim(),link:$('#apal').value.trim(),rows:[],tags:['직접 추가']};const id=idOf(it);setStatus(id,'지원함',it);ST.appl[id].date=$('#apad').value||todayStr();ST.appl[id].hist=[['지원함',ST.appl[id].date]];save();['#apac','#apar','#apal'].forEach(k=>$(k).value='');$('#apaddbox').style.display='none';renderApply();render()};
 $('#apcopy').onclick=()=>{const t=Object.keys(ST.status).filter(isApplied).map(id=>{const it=ST.items[id]||{};return `${it.company} - ${it.role||''} [${ST.status[id]}] 지원일 ${(ST.appl[id]||{}).date||''} ${it.link||''}`}).join('\n');navigator.clipboard.writeText(t).then(()=>toast('복사했습니다'))};
+
+/* ---------- 취향 예측 (별표·지원 = 좋아함, 숨기기 = 싫어함) ---------- */
+const TKW={'마케팅':/마케팅|마케터|marketing/i,'콘텐츠':/콘텐츠|컨텐츠|content/i,'SNS':/SNS|인스타|유튜브|틱톡|숏폼|소셜/i,'인플루언서':/인플루언서|시딩|체험단|크리에이터|MCN/i,'브랜드':/브랜드|brand/i,'홍보·PR':/홍보|PR|언론/,'영상':/영상|PD|편집/,'중국':/중국|샤오홍슈|더우인|HSK/,'글로벌·해외':/글로벌|해외|global|북미|일본|아시아/i,'공공·행정':/행정|공공|위촉|재단|연구원|한림원|KDI/,'사무·총무':/사무|총무|경영지원|affairs/i,'뷰티':/뷰티|화장품|코스메틱/,'제약·바이오':/제약|바이오|약품|의약|의료/,'엔터':/엔터|뮤직|아티스트|팬덤/,'교육':/교육|스터디|학습/,'이커머스·MD':/커머스|MD|쇼핑몰/,'대행사':/대행사|에이전시|AE/,'퍼포먼스·CRM':/퍼포먼스|그로스|CRM/,'기획':/기획/,'무역·물류':/무역|수출|물류|compliance/i,'외국계':/외국계|코리아|Korea/i};
+function feats(it){
+  const f=[],txt=(it.company||'')+' '+(it.role||'')+' '+row(it,'업무');
+  for(const k in TKW)if(TKW[k].test(txt))f.push(k);
+  if(it.region)f.push(it.region);
+  const ty=row(it,'고용형태')+' '+(it.role||'')+' '+(it.tags||[]).join(' ');
+  f.push(/인턴/.test(ty)?'인턴':/계약|기간제|위촉/.test(ty)?'계약직':'정규직');
+  const e=empOf(it);if(e)f.push(e<50?'50명 미만':e<300?'50~299명':e<1000?'300~999명':'1000명 이상');
+  f.push(salOf(it)?'급여 공개':'급여 미공개');
+  if(/포트폴리오/.test((it.bad||'')+row(it,'자격')))f.push('포트폴리오 필요');
+  if(it.star)f.push(it.star);
+  return f;
+}
+function tasteModel(){
+  if(TM)return TM;
+  const pos={},neg={};let P=0,N=0;
+  const add=(m,it,w)=>feats(it).forEach(k=>m[k]=(m[k]||0)+w);
+  for(const id in ST.items){const it=ST.items[id];if(!it)continue;
+    const w=(ST.saved[id]?1:0)+(isApplied(id)?2:0);
+    if(w){add(pos,it,w);P+=w}else if(ST.hidden[id]){add(neg,it,1);N+=1}}
+  const W={};new Set([...Object.keys(pos),...Object.keys(neg)]).forEach(k=>{const a=pos[k]||0,b=neg[k]||0,n=a+b;
+    W[k]=(Math.log((a+1)/(P+2))-Math.log((b+1)/(N+2)))*(n/(n+2))});
+  return TM={P,N,W,pos,neg};
+}
+function taste(it){const m=tasteModel();if(m.P+m.N<3||!m.P)return null;
+  let z=Math.log((m.P+1)/(m.N+1))*0.5;feats(it).forEach(k=>{if(m.W[k])z+=m.W[k]});
+  return Math.round(100/(1+Math.exp(-z)))}
+function tasteExport(){const m=tasteModel();const pick=f=>Object.keys(ST.items).filter(f).map(id=>{const it=ST.items[id];return {company:it.company,role:it.role,link:it.link||''}});
+  return {kind:'taste',at:new Date().toISOString(),liked:pick(id=>ST.saved[id]),applied:pick(isApplied),hidden:pick(id=>ST.hidden[id]&&!ST.saved[id]&&!isApplied(id)),weights:Object.fromEntries(Object.entries(m.W).map(([k,v])=>[k,+v.toFixed(2)]))}}
+function renderTaste(){const m=tasteModel();const ks=Object.keys(m.W).sort((a,b)=>m.W[b]-m.W[a]);
+  const up=ks.filter(k=>m.W[k]>0.15).slice(0,10),dn=ks.filter(k=>m.W[k]<-0.15).reverse().slice(0,10);
+  $('#tastebody').innerHTML=(m.P+m.N<3||!m.P)?'<p class="note">별표·지원·숨기기 기록이 3건 이상(별표나 지원 1건 이상) 쌓이면 취향 점수가 계산됩니다. 마음에 드는 공고는 별표를, 관심 없는 공고는 "숨기기"를 눌러 주세요.</p>'
+   :`<p class="note">좋아함 ${Object.keys(ST.saved).length}건, 지원 ${Object.keys(ST.status).filter(isApplied).length}건, 숨김 ${Object.keys(ST.hidden).length}건으로 계산했습니다. 기록이 쌓일수록 정확해집니다.</p>
+   <div>자주 고른 특징</div><div class="tw">${up.map(k=>`<span class="up">${E(k)}</span>`).join('')||'<i class="note">아직 없음</i>'}</div>
+   <div>자주 숨긴 특징</div><div class="tw">${dn.map(k=>`<span class="dn">${E(k)}</span>`).join('')||'<i class="note">아직 없음 (관심 없는 공고를 숨기면 채워집니다)</i>'}</div>
+   <div class="acts"><button id="tastesend">취향을 매일 탐색에 반영하도록 보내기</button><button id="tastecopy">취향 데이터 복사</button></div>`;
+  const b=$('#tastesend');if(b)b.onclick=sendTaste;const c=$('#tastecopy');if(c)c.onclick=()=>navigator.clipboard.writeText(JSON.stringify(tasteExport())).then(()=>toast('복사했습니다'))}
+async function sendTaste(){const data=tasteExport(),title=`[취향 데이터] 좋아함 ${data.liked.length} · 지원 ${data.applied.length} · 숨김 ${data.hidden.length}`;
+  const body='사이트에서 보낸 취향 데이터입니다.\n\n<!--fb '+JSON.stringify(data)+' -->';const repo=CFG.repo;
+  if(CFG.token&&repo){try{const r=await fetch(`https://api.github.com/repos/${repo}/issues`,{method:'POST',headers:{'Authorization':'Bearer '+CFG.token,'Accept':'application/vnd.github+json','Content-Type':'application/json'},body:JSON.stringify({title,body,labels:['feedback']})});if(!r.ok)throw new Error(r.status);toast('보냈습니다. 다음 탐색부터 반영됩니다.');return}catch(e){}}
+  try{await navigator.clipboard.writeText(JSON.stringify(data))}catch(e){}
+  toast('자동 전송이 설정돼 있지 않아 취향 데이터를 복사했습니다. 붙여넣어 전달해 주세요.')}
+
+/* ---------- 즐겨찾기 ---------- */
+function curMap(){const m={};if(CUR)for(const s of (CUR.sections||[]))for(const i of (s.items||[]))m[idOf(i)]=i;return m}
+function renderFav(){
+  const cm=curMap(),q=$('#fvq').value.trim().toLowerCase(),so=$('#fvsort').value,past=$('#fvpast').checked;
+  let its=Object.keys(ST.saved).map(id=>cm[id]||ST.items[id]).filter(Boolean);
+  const total=its.length;
+  if(q)its=its.filter(i=>((i.company||'')+(i.role||'')).toLowerCase().includes(q));
+  if(!past)its=its.filter(i=>{const d=dlOf(i);return !d||dday(d)>=0});
+  const key=so==='taste'?i=>-(taste(i)??50):so==='new'?i=>-(ST.savedAt[idOf(i)]||0):i=>{const d=dlOf(i);return d?d.getTime():9e15};
+  its.sort((a,b)=>key(a)-key(b));
+  $('#fvcount').textContent=`${its.length}건 표시 (전체 ${total}건)`;
+  $('#favcontent').innerHTML=its.length?`<div class="grid">${its.map(i=>card(i)).join('')}</div>`:'<p class="empty">아직 즐겨찾기한 공고가 없습니다. 맞춤 브리핑 카드 오른쪽 위의 ☆ 를 눌러 보세요.</p>';
+  renderTaste();
+}
+['fvq','fvsort','fvpast'].forEach(i=>$('#'+i).addEventListener('input',renderFav));
+$('#favcontent').addEventListener('click',e=>{const b=e.target.closest('[data-a]');if(!b)return;const c=b.closest('.card');if(!c)return;const id=c.dataset.id,it=ST.items[id],a=b.dataset.a;
+  if(a==='fav'){delete ST.saved[id]}
+  else if(a==='hide'){ST.hidden[id]?delete ST.hidden[id]:ST.hidden[id]=1}
+  else if(a==='apply'){if(isApplied(id)){if(confirm('지원함에서 뺄까요?'))setStatus(id,'')}else{setStatus(id,'지원함',it);toast('지원함에 넣었습니다')}}
+  else if(a==='status'){const o=['','관심','지원함','서류통과','면접','합격','탈락'];setStatus(id,o[(o.indexOf(ST.status[id]||'')+1)%o.length],it)}
+  else if(a==='memo'){if(ST.notes[id]==null)ST.notes[id]=''}
+  else if(a==='fb'){openFb(it);return}
+  else return;
+  save();render();renderFav()});
+$('#favcontent').addEventListener('input',e=>{if(e.target.dataset.a==='note'){ST.notes[e.target.closest('.card').dataset.id]=e.target.value;save()}});
+
+/* ---------- 캘린더 ---------- */
+const CT={'서류 마감':'#e5484d','서류 발표':'#f08c00','필기·인적성':'#8e4ec6','면접':'#0b7fd4','최종 발표':'#2f9e44','입사·기타':'#6b7280'};
+const CS={'즐겨찾기':'#d9a400','지원함':'#0b7fd4','직접 입력':'#6b7280'};
+let CAL={y:new Date().getFullYear(),m:new Date().getMonth(),sel:null,offT:new Set(),offS:new Set(),offC:new Set()};
+const ymd=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+function calEvents(){
+  const ev=[],cm=curMap(),ids=new Set([...Object.keys(ST.saved),...Object.keys(ST.status).filter(isApplied)]);
+  const srcOf=id=>isApplied(id)?'지원함':ST.saved[id]?'즐겨찾기':'직접 입력';
+  ids.forEach(id=>{const it=cm[id]||ST.items[id];if(!it)return;const src=srcOf(id);
+    const d=dlOf(it);if(d)ev.push({date:ymd(d),type:'서류 마감',title:it.company,sub:(it.role||'')+' 지원 마감',src,link:it.link});
+    (it.events||[]).forEach(x=>ev.push({date:x[0],type:CT[x[2]]?x[2]:'입사·기타',title:it.company,sub:x[1],src,link:it.link}))});
+  ST.cal.forEach((c,i)=>ev.push({date:c.date,type:CT[c.type]?c.type:'입사·기타',title:c.title,sub:c.sub||'',src:c.id?srcOf(c.id):'직접 입력',ci:i,link:(ST.items[c.id]||{}).link}));
+  return ev.sort((a,b)=>a.date.localeCompare(b.date));
+}
+function calChips(el,label,names,off,colors){$(el).innerHTML=`<span class="lb">${label}</span>`+names.map(n=>`<button data-n="${E(n)}" class="${off.has(n)?'':'on'}" style="--c:${colors&&colors[n]||'var(--fg)'}">${E(n)}</button>`).join('')+(names.length>3?`<button data-n="*" class="on" style="--c:var(--sub)">${off.size?'모두 켜기':'모두 끄기'}</button>`:'')}
+function renderCal(){
+  const all=calEvents(),cos=[...new Set(all.map(e=>e.title))];
+  calChips('#calft','종류',Object.keys(CT),CAL.offT,CT);calChips('#calfs','구분',Object.keys(CS),CAL.offS,CS);
+  if(cos.length)calChips('#calfc','회사',cos,CAL.offC);else $('#calfc').innerHTML='';
+  const ev=all.filter(e=>!CAL.offT.has(e.type)&&!CAL.offS.has(e.src)&&!CAL.offC.has(e.title));
+  const by={};ev.forEach(e=>(by[e.date]=by[e.date]||[]).push(e));
+  $('#calym').textContent=`${CAL.y}년 ${CAL.m+1}월`;
+  const first=new Date(CAL.y,CAL.m,1),start=new Date(CAL.y,CAL.m,1-first.getDay()),td=ymd(new Date());
+  let h=['일','월','화','수','목','금','토'].map(d=>`<div class="dow">${d}</div>`).join('');
+  for(let i=0;i<42;i++){const d=new Date(start.getFullYear(),start.getMonth(),start.getDate()+i),k=ymd(d),es=by[k]||[];
+    if(i===35&&d.getMonth()!==CAL.m)break;
+    h+=`<div class="day${d.getMonth()!==CAL.m?' out':''}${k===td?' today':''}${k===CAL.sel?' sel':''}${d.getDay()===0?' sun':d.getDay()===6?' sat':''}" data-d="${k}"><div class="dn">${d.getDate()}</div>${es.slice(0,3).map(e=>`<span class="ev" style="background:${CT[e.type]}" title="${E(e.type+' · '+e.title+' '+e.sub)}">${E(e.title)}</span>`).join('')}${es.length>3?`<div class="more">+${es.length-3}건</div>`:''}</div>`}
+  $('#calgrid').innerHTML=h;
+  const list=CAL.sel?(by[CAL.sel]||[]):ev.filter(e=>e.date>=td);
+  $('#agtitle').innerHTML=CAL.sel?`${E(CAL.sel)} 일정 <button id="agall" style="font-size:.6em;vertical-align:middle">다가오는 일정 전체 보기</button>`:'다가오는 일정';
+  let a='',last='';
+  list.forEach(e=>{if(e.date!==last){last=e.date;const d=new Date(e.date+'T00:00:00'),n=dday(d);a+=`<div class="agd">${d.getMonth()+1}월 ${d.getDate()}일 (${'일월화수목금토'[d.getDay()]}) <span class="note">${n===0?'오늘':n>0?'D-'+n:Math.abs(n)+'일 전'}</span></div>`}
+    a+=`<div class="agi" style="--c:${CT[e.type]}"><span class="ty">${E(e.type)}</span><div class="tx"><b>${E(e.title)}</b><span>${E(e.sub)} · ${E(e.src)}</span></div>${e.link?`<a href="${E(e.link)}" target="_blank" rel="noopener noreferrer">공고</a>`:''}${e.ci!=null?`<button data-del="${e.ci}">삭제</button>`:''}</div>`});
+  $('#agenda').innerHTML=a||`<p class="empty">${all.length?'선택한 조건에 해당하는 일정이 없습니다.':'즐겨찾기하거나 지원한 공고가 생기면 마감·전형 일정이 여기에 표시됩니다.'}</p>`;
+  const g=$('#agall');if(g)g.onclick=()=>{CAL.sel=null;renderCal()};
+}
+[['#calft','offT'],['#calfs','offS'],['#calfc','offC']].forEach(([el,k])=>$(el).addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const n=b.dataset.n;
+  if(n==='*'){if(CAL[k].size)CAL[k].clear();else [...$(el).querySelectorAll('button')].forEach(x=>x.dataset.n!=='*'&&CAL[k].add(x.dataset.n))}
+  else CAL[k].has(n)?CAL[k].delete(n):CAL[k].add(n);renderCal()}));
+$('#calprev').onclick=()=>{if(--CAL.m<0){CAL.m=11;CAL.y--}renderCal()};
+$('#calnext').onclick=()=>{if(++CAL.m>11){CAL.m=0;CAL.y++}renderCal()};
+$('#caltoday').onclick=()=>{const d=new Date();CAL.y=d.getFullYear();CAL.m=d.getMonth();CAL.sel=null;renderCal()};
+$('#calgrid').addEventListener('click',e=>{const d=e.target.closest('.day');if(!d)return;CAL.sel=CAL.sel===d.dataset.d?null:d.dataset.d;if(CAL.sel)$('#caldate').value=CAL.sel;renderCal()});
+$('#agenda').addEventListener('click',e=>{const b=e.target.closest('[data-del]');if(!b)return;if(confirm('이 일정을 지울까요?')){ST.cal.splice(+b.dataset.del,1);save();renderCal()}});
+$('#caladd').onclick=()=>{const x=$('#caladdbox'),open=x.style.display==='none';x.style.display=open?'block':'none';if(!open)return;
+  const cm=curMap(),ids=[...new Set([...Object.keys(ST.status).filter(isApplied),...Object.keys(ST.saved)])];
+  $('#calco').innerHTML=ids.map(id=>{const it=cm[id]||ST.items[id];return it?`<option value="${id}">${E(it.company)} · ${E((it.role||'').slice(0,24))}</option>`:''}).join('')+'<option value="">직접 입력…</option>';
+  $('#calcot').style.display=$('#calco').value?'none':'';
+  $('#caltype').innerHTML=Object.keys(CT).map(t=>`<option>${t}</option>`).join('');$('#caltype').value='면접';
+  if(!$('#caldate').value)$('#caldate').value=CAL.sel||ymd(new Date())};
+$('#calco').onchange=()=>{$('#calcot').style.display=$('#calco').value?'none':''};
+$('#calok').onclick=()=>{const id=$('#calco').value,it=id?(curMap()[id]||ST.items[id]):null,title=it?it.company:$('#calcot').value.trim(),date=$('#caldate').value;
+  if(!title||!date){toast('회사와 날짜를 입력하세요');return}
+  ST.cal.push({id:id||'',title,date,type:$('#caltype').value,sub:$('#calsub').value.trim()});save();$('#calsub').value='';$('#caladdbox').style.display='none';
+  const d=new Date(date+'T00:00:00');CAL.y=d.getFullYear();CAL.m=d.getMonth();toast('일정을 넣었습니다');renderCal()};
+/* 맞춤 브리핑이 다시 그려질 때 열려 있는 즐겨찾기 탭도 함께 갱신 */
+render=(o=>function(){o();if($('#favview').style.display==='block')renderFav()})(render);
 </script>
 </body>
 </html>
