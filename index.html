@@ -140,7 +140,7 @@ a{color:var(--accent);text-decoration:none;word-break:break-all}
   <p class="note"><label><input type="checkbox" id="remember" checked style="width:auto"> 이 기기에서 기억하기</label></p>
 </div>
 <main id="app" style="display:none">
-  <div class="tabs"><button id="tabB" class="on">맞춤 브리핑</button><button id="tabF">즐겨찾기</button><button id="tabD">지원함</button><button id="tabK">캘린더</button><button id="tabC">중국 현지 공고</button><button id="tabA">전체 공고</button></div>
+  <div class="tabs"><button id="tabB" class="on">맞춤 브리핑</button><button id="tabF">즐겨찾기</button><button id="tabD">지원함</button><button id="tabK">캘린더</button><button id="tabC">중국 현지 공고</button><button id="tabA">전체 공고</button><span class="sp"></span><span class="note" id="syncst" style="align-self:center;font-size:.8em"></span></div>
   <div id="favview" style="display:none">
     <h1>즐겨찾기</h1>
     <p class="sum">별표(☆)를 누른 공고만 모았습니다. 별표·지원·숨기기 기록으로 취향을 계산해 다른 공고에 "취향 n%"를 표시합니다.</p>
@@ -242,7 +242,7 @@ const LS={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}
 let ST=LS.get('jb_state',{saved:{},status:{},hidden:{},notes:{},items:{},prefs:{}});
 ST.appl=ST.appl||{};
 ST.cal=ST.cal||[];ST.savedAt=ST.savedAt||{};let TM=null;
-const save=()=>{TM=null;LS.set('jb_state',ST)};
+const save=()=>{TM=null;if(syncTouch())syncQueue();LS.set('jb_state',ST)};
 const STAGES=['지원함','서류통과','면접','합격','탈락'];
 const isApplied=id=>STAGES.includes(ST.status[id]);
 const todayStr=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
@@ -257,7 +257,7 @@ const toast=m=>{const t=$('#toast');t.textContent=m;t.style.display='block';clea
 
 async function deriveKey(pass,salt,iter){
   const km=await crypto.subtle.importKey('raw',new TextEncoder().encode(pass),'PBKDF2',false,['deriveKey']);
-  return crypto.subtle.deriveKey({name:'PBKDF2',salt,iterations:iter,hash:'SHA-256'},km,{name:'AES-GCM',length:256},false,['decrypt']);
+  return crypto.subtle.deriveKey({name:'PBKDF2',salt,iterations:iter,hash:'SHA-256'},km,{name:'AES-GCM',length:256},false,['decrypt','encrypt']);
 }
 async function dec(url){
   const r=await fetch(url,{cache:'no-store'});if(!r.ok)throw new Error('fetch '+r.status);
@@ -275,7 +275,7 @@ async function unlock(pass,remember){
   if(remember)LS.set('jb_pw',pass);
   CFG=INDEX.cfg||{};
   $('#lock').style.display='none';$('#app').style.display='block';
-  init();return true;
+  init();syncStart();return true;
 }
 $('#unlock').onclick=()=>unlock($('#pw').value,$('#remember').checked);
 $('#pw').addEventListener('keydown',e=>{if(e.key==='Enter')$('#unlock').click()});
@@ -676,6 +676,65 @@ $('#calok').onclick=()=>{const id=$('#calco').value,it=id?(curMap()[id]||ST.item
   const d=new Date(date+'T00:00:00');CAL.y=d.getFullYear();CAL.m=d.getMonth();toast('일정을 넣었습니다');renderCal()};
 /* 맞춤 브리핑이 다시 그려질 때 열려 있는 즐겨찾기 탭도 함께 갱신 */
 render=(o=>function(){o();if($('#favview').style.display==='block')renderFav()})(render);
+
+/* ---------- 기기 간 동기화 (GitHub 이슈 한 건에 암호화해 저장) ---------- */
+const SYNC={n:0,timer:null,busy:false,lastRemote:0,sig:{},calSig:''};
+const SKEYS=['saved','status','hidden','notes','appl','savedAt'];
+const idSig=id=>JSON.stringify(SKEYS.map(k=>ST[k][id]??null));
+function syncInitSig(){SYNC.sig={};syncIds(ST).forEach(id=>SYNC.sig[id]=idSig(id));SYNC.calSig=JSON.stringify(ST.cal)}
+function syncIds(s){const o=new Set();SKEYS.concat(['items','mt']).forEach(k=>Object.keys(s[k]||{}).forEach(i=>o.add(i)));return o}
+function syncTouch(){const now=Date.now();let ch=false;ST.mt=ST.mt||{};
+  syncIds(ST).forEach(id=>{const g=idSig(id);if(SYNC.sig[id]!==g){SYNC.sig[id]=g;ST.mt[id]=now;ch=true}});
+  const c=JSON.stringify(ST.cal);if(c!==SYNC.calSig){SYNC.calSig=c;ST.calT=now;ch=true}
+  return ch}
+const slim=it=>it&&{company:it.company,role:it.role,link:it.link,region:it.region,star:it.star,tags:it.tags,rows:(it.rows||[]).filter(r=>['근무지','고용형태','급여','사원수','마감','업무','전형','자격'].includes(r[0])),good:it.good,bad:it.bad,events:it.events};
+function syncPayload(lean){const used=id=>ST.saved[id]||ST.status[id]||ST.hidden[id]||ST.notes[id];const items={};
+  Object.keys(ST.items).forEach(id=>{if(used(id)){const x=slim(ST.items[id]);if(lean){delete x.good;delete x.bad}items[id]=x}});
+  const o={v:1,ts:Date.now(),items,mt:ST.mt||{},cal:ST.cal,calT:ST.calT||0};SKEYS.forEach(k=>o[k]=ST[k]);return o}
+const b64e=u=>{let s='';for(let i=0;i<u.length;i+=8192)s+=String.fromCharCode.apply(null,u.subarray(i,i+8192));return btoa(s)};
+async function gz(u,dir){if(typeof CompressionStream==='undefined')return null;const st=new Blob([u]).stream().pipeThrough(dir>0?new CompressionStream('gzip'):new DecompressionStream('gzip'));return new Uint8Array(await new Response(st).arrayBuffer())}
+async function syncPack(o){let raw=new TextEncoder().encode(JSON.stringify(o)),z=0;const g=await gz(raw,1);if(g){raw=g;z=1}
+  const iv=crypto.getRandomValues(new Uint8Array(12));const ct=new Uint8Array(await crypto.subtle.encrypt({name:'AES-GCM',iv},KEY,raw));
+  return '채용 사이트의 즐겨찾기·지원·일정 동기화 데이터입니다(암호화). 지우거나 고치지 마세요.\n\n<!--state '+JSON.stringify({v:1,z,i:b64e(iv),c:b64e(ct)})+' -->'}
+async function syncUnpack(body){const m=(body||'').match(/<!--state (\{.*?\}) -->/s);if(!m)return null;const o=JSON.parse(m[1]);
+  let pt=new Uint8Array(await crypto.subtle.decrypt({name:'AES-GCM',iv:b64(o.i)},KEY,b64(o.c)));if(o.z)pt=await gz(pt,-1);
+  return JSON.parse(new TextDecoder().decode(pt))}
+const syncApi=(method,body)=>fetch(`https://api.github.com/repos/${CFG.repo}/issues/${CFG.stateIssue}`,{method,cache:'no-store',headers:{'Authorization':'Bearer '+CFG.token,'Accept':'application/vnd.github+json','Content-Type':'application/json'},body:body?JSON.stringify(body):undefined});
+function syncMerge(r){let changed=false;ST.mt=ST.mt||{};const rm=r.mt||{};
+  syncIds(r).forEach(id=>{const a=ST.mt[id]||0,b=rm[id]||0;const known=syncIds(ST).has(id);
+    if(b>a||(!known&&b>=a)){SKEYS.forEach(k=>{if(r[k]&&r[k][id]!=null)ST[k][id]=r[k][id];else delete ST[k][id]});
+      if(r.items&&r.items[id]&&!(ST.items[id]&&(ST.items[id].rows||[]).length>(r.items[id].rows||[]).length))ST.items[id]=r.items[id];
+      ST.mt[id]=b;changed=true}});
+  if((r.calT||0)>(ST.calT||0)){ST.cal=r.cal||[];ST.calT=r.calT;changed=true}
+  return changed}
+function syncMark(t,err){const e=$('#syncst');if(!e)return;e.textContent=t;e.style.color=err?'#e5484d':''}
+function syncRefresh(){TM=null;LS.set('jb_state',ST);syncInitSig();render();
+  if($('#applyview').style.display==='block')renderApply();if($('#calview').style.display==='block')renderCal()}
+async function syncPull(){if(!SYNC.on||SYNC.busy)return;SYNC.busy=true;
+  try{const res=await syncApi('GET');if(!res.ok)throw new Error(res.status);const j=await res.json();const r=await syncUnpack(j.body);
+    let localNewer=false;
+    if(r){SYNC.lastRemote=r.ts||0;if(syncMerge(r))syncRefresh();
+      const rm=r.mt||{};localNewer=[...syncIds(ST)].some(id=>(ST.mt[id]||0)>(rm[id]||0))||(ST.calT||0)>(r.calT||0)}
+    else localNewer=syncIds(ST).size>0||ST.cal.length>0;
+    SYNC.busy=false;syncMark('동기화됨 '+new Date().toTimeString().slice(0,5));if(localNewer)syncPush(true)}
+  catch(e){SYNC.busy=false;syncMark('동기화 실패 (잠시 뒤 다시 시도)',1)}}
+async function syncPush(skipPull){if(!SYNC.on)return;if(SYNC.busy){syncQueue();return}SYNC.busy=true;
+  try{if(!skipPull){const res=await syncApi('GET');if(!res.ok)throw new Error(res.status);const r=await syncUnpack((await res.json()).body);
+      if(r&&(r.ts||0)>SYNC.lastRemote){SYNC.lastRemote=r.ts;if(syncMerge(r))syncRefresh()}}
+    let p=syncPayload(false),body=await syncPack(p);if(body.length>60000){p=syncPayload(true);body=await syncPack(p)}
+    if(body.length>65000)throw new Error('too big');
+    const w=await syncApi('PATCH',{body});if(!w.ok)throw new Error(w.status);
+    SYNC.lastRemote=p.ts;syncMark('동기화됨 '+new Date().toTimeString().slice(0,5))}
+  catch(e){syncMark('동기화 실패 (잠시 뒤 다시 시도)',1)}
+  SYNC.busy=false}
+function syncQueue(){if(!SYNC.on)return;clearTimeout(SYNC.timer);SYNC.timer=setTimeout(()=>syncPush(false),2500);syncMark('저장 중…')}
+function syncStart(){SYNC.on=!!(CFG.token&&CFG.repo&&CFG.stateIssue);ST.mt=ST.mt||{};
+  if(!ST.mtInit){const now=Date.now()-1;syncIds(ST).forEach(id=>{if(!ST.mt[id])ST.mt[id]=now});if(ST.cal.length&&!ST.calT)ST.calT=now;ST.mtInit=1;LS.set('jb_state',ST)}
+  syncInitSig();
+  if(!SYNC.on){syncMark('이 기기에만 저장 중');return}
+  syncPull();
+  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')syncPull()});
+  setInterval(()=>{if(document.visibilityState==='visible')syncPull()},120000)}
 </script>
 </body>
 </html>
